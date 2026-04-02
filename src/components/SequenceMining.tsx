@@ -9,7 +9,7 @@ import { SEQUENCE_DATASETS, mineFrequentSequences } from '../utils/sequences'
 const PAGE_SIZE = 8
 
 // ── Data Explorer ──────────────────────────────────────────────────────────────
-function SeqDataExplorer({ datasetId, setDatasetId }: { datasetId: string; setDatasetId: (id: string) => void }) {
+function SeqDataExplorer({ datasetId }: { datasetId: string }) {
   const { t } = useLanguage()
   const [page, setPage] = useState(0)
   const dataset = SEQUENCE_DATASETS.find(d => d.id === datasetId)!
@@ -32,20 +32,6 @@ function SeqDataExplorer({ datasetId, setDatasetId }: { datasetId: string; setDa
 
   return (
     <div className="space-y-6">
-      {/* Dataset selector */}
-      <div className="flex gap-2 flex-wrap">
-        {SEQUENCE_DATASETS.map(ds => (
-          <button key={ds.id} onClick={() => { setDatasetId(ds.id); setPage(0) }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              datasetId === ds.id
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                : 'border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300'
-            }`}>
-            {t(ds.labelKey)}
-          </button>
-        ))}
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -141,45 +127,82 @@ function SeqDataExplorer({ datasetId, setDatasetId }: { datasetId: string; setDa
 }
 
 // ── Preprocessing for sequences ────────────────────────────────────────────────
-type SeqStep = 'raw' | 'prefix' | 'projected' | 'patterns'
+type SeqStep = 'raw' | 'assembly' | 'filter' | 'database'
 const SEQ_STEPS: { id: SeqStep; icon: React.ElementType; name: string; desc: string; info: string }[] = [
-  { id: 'raw',       icon: Database,            name: 'seqPrepStep1Name', desc: 'seqPrepStep1Desc', info: 'seqPrepStep1Info' },
-  { id: 'prefix',    icon: Layers,              name: 'seqPrepStep2Name', desc: 'seqPrepStep2Desc', info: 'seqPrepStep2Info' },
-  { id: 'projected', icon: GitCommitHorizontal, name: 'seqPrepStep3Name', desc: 'seqPrepStep3Desc', info: 'seqPrepStep3Info' },
-  { id: 'patterns',  icon: BarChart2,            name: 'seqPrepStep4Name', desc: 'seqPrepStep4Desc', info: 'seqPrepStep4Info' },
+  { id: 'raw',      icon: Database,            name: 'seqPrepStep1Name', desc: 'seqPrepStep1Desc', info: 'seqPrepStep1Info' },
+  { id: 'assembly', icon: Layers,              name: 'seqPrepStep2Name', desc: 'seqPrepStep2Desc', info: 'seqPrepStep2Info' },
+  { id: 'filter',   icon: GitCommitHorizontal, name: 'seqPrepStep3Name', desc: 'seqPrepStep3Desc', info: 'seqPrepStep3Info' },
+  { id: 'database', icon: BarChart2,           name: 'seqPrepStep4Name', desc: 'seqPrepStep4Desc', info: 'seqPrepStep4Info' },
 ]
+
+// Synthetic raw event logs (illustrative) ─ interleaved across sessions
+const RAW_LOG: Record<string, { session: string; time: string; event: string }[]> = {
+  web: [
+    { session: 'S002', time: '14:02:01', event: 'home' },
+    { session: 'S001', time: '14:02:14', event: 'home' },
+    { session: 'S003', time: '14:02:33', event: 'home' },
+    { session: 'S001', time: '14:02:45', event: 'products' },
+    { session: 'S002', time: '14:03:02', event: 'search' },
+    { session: 'S003', time: '14:03:17', event: 'products' },
+    { session: 'S001', time: '14:03:28', event: 'cart' },
+    { session: 'S004', time: '14:03:40', event: 'home' },
+    { session: 'S002', time: '14:04:01', event: 'products' },
+    { session: 'S003', time: '14:04:12', event: 'cart' },
+    { session: 'S001', time: '14:04:33', event: 'checkout' },
+    { session: 'S004', time: '14:04:50', event: 'blog' },
+  ],
+  purchase: [
+    { session: 'C003', time: '2024-01-05', event: 'phone' },
+    { session: 'C001', time: '2024-01-05', event: 'laptop' },
+    { session: 'C002', time: '2024-01-12', event: 'tablet' },
+    { session: 'C001', time: '2024-02-12', event: 'mouse' },
+    { session: 'C003', time: '2024-02-18', event: 'case' },
+    { session: 'C002', time: '2024-02-25', event: 'keyboard' },
+    { session: 'C001', time: '2024-03-15', event: 'keyboard' },
+    { session: 'C003', time: '2024-03-20', event: 'charger' },
+    { session: 'C002', time: '2024-04-05', event: 'stylus' },
+    { session: 'C001', time: '2024-04-10', event: 'laptop_bag' },
+  ],
+}
+
+// Illustrative assembled sessions (includes length-1 examples to show filtering)
+const GROUPED: Record<string, { session: string; seq: string[]; keep: boolean }[]> = {
+  web: [
+    { session: 'S001', seq: ['home', 'products', 'cart', 'checkout'], keep: true },
+    { session: 'S002', seq: ['home', 'search', 'products'], keep: true },
+    { session: 'S003', seq: ['home', 'products', 'cart'], keep: true },
+    { session: 'S004', seq: ['home', 'blog'], keep: true },
+    { session: 'S005', seq: ['home'], keep: false },
+    { session: 'S006', seq: ['products'], keep: false },
+  ],
+  purchase: [
+    { session: 'C001', seq: ['laptop', 'mouse', 'keyboard', 'laptop_bag'], keep: true },
+    { session: 'C002', seq: ['tablet', 'keyboard', 'stylus'], keep: true },
+    { session: 'C003', seq: ['phone', 'case', 'charger'], keep: true },
+    { session: 'C004', seq: ['tablet', 'case', 'keyboard'], keep: true },
+    { session: 'C005', seq: ['phone'], keep: false },
+    { session: 'C006', seq: ['laptop'], keep: false },
+  ],
+}
+
+function EventBadge({ ev, colors }: { ev: string; colors: Record<string, string> }) {
+  const c = colors[ev] ?? '#52525b'
+  return (
+    <span className="px-1.5 py-0.5 rounded font-mono text-xs"
+      style={{ background: c + '20', color: c, border: `1px solid ${c}35` }}>
+      {ev}
+    </span>
+  )
+}
 
 function SeqPreprocessing({ datasetId }: { datasetId: string }) {
   const { t } = useLanguage()
   const [step, setStep] = useState<SeqStep>('raw')
   const dataset = SEQUENCE_DATASETS.find(d => d.id === datasetId)!
-  const preview = dataset.sequences.slice(0, 6)
   const currentStep = SEQ_STEPS.find(s => s.id === step)!
-
-  // Find frequent 1-events for prefix/projected views
-  const freqEvents = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const seq of dataset.sequences) for (const ev of seq) counts.set(ev, (counts.get(ev) || 0) + 1)
-    return Array.from(counts.entries())
-      .filter(([, c]) => c / dataset.sequences.length >= 0.5)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([ev]) => ev)
-  }, [dataset])
-
-  // Projected database for first frequent event
-  const projectedDB = useMemo(() => {
-    const prefix = freqEvents[0]
-    if (!prefix) return []
-    return dataset.sequences
-      .map((seq, i) => {
-        const idx = seq.indexOf(prefix)
-        if (idx < 0) return null
-        return { id: i, suffix: seq.slice(idx + 1) }
-      })
-      .filter(Boolean)
-      .slice(0, 6) as { id: number; suffix: string[] }[]
-  }, [dataset, freqEvents])
+  const rawLog = RAW_LOG[datasetId] ?? RAW_LOG.web
+  const grouped = GROUPED[datasetId] ?? GROUPED.web
+  const isWeb = datasetId === 'web'
 
   return (
     <div className="rounded-3xl border border-zinc-800 overflow-hidden">
@@ -213,30 +236,52 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
         {/* Right */}
         <div className="lg:col-span-8 p-6 space-y-4">
           <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
+            <motion.div key={step + datasetId} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
               transition={{ duration: 0.2 }} className="overflow-x-auto rounded-xl border border-zinc-800">
 
+              {/* Step 1: Raw event log — interleaved, chronological */}
               {step === 'raw' && (
                 <table className="w-full text-xs min-w-max">
                   <thead className="bg-zinc-900/60 border-b border-zinc-800">
                     <tr>
-                      <th className="text-left px-3 py-2 text-zinc-500 w-16">{t('seqRawColSession')}</th>
-                      <th className="text-left px-3 py-2 text-zinc-500">{t('seqRawColEvents')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500 w-16">{isWeb ? t('seqRawColSession') : t('seqRawColCustomer')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500 w-28">{isWeb ? t('seqRawColTime') : t('seqRawColDate')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500">{isWeb ? t('seqRawColPage') : t('seqRawColCategory')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/40 bg-zinc-900">
-                    {preview.map((seq, i) => (
+                    {rawLog.map((row, i) => (
                       <tr key={i} className="hover:bg-zinc-800/20">
-                        <td className="px-3 py-2 text-zinc-500 font-mono">S{String(i + 1).padStart(3, '0')}</td>
+                        <td className="px-3 py-2 text-zinc-400 font-mono">{row.session}</td>
+                        <td className="px-3 py-2 text-zinc-500 font-mono text-xs">{row.time}</td>
+                        <td className="px-3 py-2">
+                          <EventBadge ev={row.event} colors={dataset.eventColors} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Step 2: Session assembly — grouped and sorted */}
+              {step === 'assembly' && (
+                <table className="w-full text-xs">
+                  <thead className="bg-zinc-900/60 border-b border-zinc-800">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-zinc-500 w-20">{isWeb ? t('seqRawColSession') : t('seqRawColCustomer')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500">{t('seqPrepColSeq')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/40 bg-zinc-900">
+                    {grouped.filter(g => g.keep).map((g, i) => (
+                      <tr key={i} className="hover:bg-zinc-800/20">
+                        <td className="px-3 py-2 text-zinc-400 font-mono">{g.session}</td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1 flex-wrap">
-                            {seq.map((ev, j) => (
+                            {g.seq.map((ev, j) => (
                               <span key={j} className="flex items-center gap-0.5">
-                                <span className="px-1.5 py-0.5 rounded font-mono"
-                                  style={{ background: (dataset.eventColors[ev] ?? '#52525b') + '20', color: dataset.eventColors[ev] ?? '#a1a1aa', border: `1px solid ${dataset.eventColors[ev] ?? '#52525b'}35` }}>
-                                  {ev}
-                                </span>
-                                {j < seq.length - 1 && <ArrowRight className="w-2 h-2 text-zinc-700" />}
+                                <EventBadge ev={ev} colors={dataset.eventColors} />
+                                {j < g.seq.length - 1 && <ArrowRight className="w-2 h-2 text-zinc-700" />}
                               </span>
                             ))}
                           </div>
@@ -247,83 +292,67 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
                 </table>
               )}
 
-              {step === 'prefix' && (
-                <div className="p-4 space-y-3">
-                  <p className="text-xs text-zinc-500 mb-3">{t('seqPrefixSeedsLabel')}</p>
-                  {freqEvents.map(ev => (
-                    <div key={ev} className="flex items-center gap-3 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                      <span className="px-2 py-1 rounded font-mono text-xs"
-                        style={{ background: (dataset.eventColors[ev] ?? '#3b82f6') + '20', color: dataset.eventColors[ev] ?? '#93c5fd', border: `1px solid ${dataset.eventColors[ev] ?? '#3b82f6'}40` }}>
-                        {ev}
-                      </span>
-                      <span className="text-zinc-400 text-xs">→ {t('seqPrefixSeedNote')}</span>
-                    </div>
-                  ))}
-                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">{t('seqPrefixSeedNote')}</p>
-                </div>
+              {/* Step 3: Filtering — show kept and removed */}
+              {step === 'filter' && (
+                <table className="w-full text-xs">
+                  <thead className="bg-zinc-900/60 border-b border-zinc-800">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-zinc-500 w-20">{isWeb ? t('seqRawColSession') : t('seqRawColCustomer')}</th>
+                      <th className="text-center px-3 py-2 text-zinc-500 w-16">{t('seqPrepColLen')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500">{t('seqPrepColKeep')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/40 bg-zinc-900">
+                    {grouped.map((g, i) => (
+                      <tr key={i} className={`hover:bg-zinc-800/20 ${!g.keep ? 'opacity-50' : ''}`}>
+                        <td className="px-3 py-2 text-zinc-400 font-mono">{g.session}</td>
+                        <td className="px-3 py-2 text-center text-zinc-400 font-mono">{g.seq.length}</td>
+                        <td className="px-3 py-2">
+                          {g.keep
+                            ? <span className="text-emerald-400 font-semibold">✓</span>
+                            : <span className="text-red-400 text-xs">{t('seqPrepTooShort')}</span>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
 
-              {step === 'projected' && (
-                <div className="p-4 space-y-3">
-                  <p className="text-xs text-zinc-500 mb-1">
-                    {t('seqProjectedTitle')}{' '}
-                    <span className="font-mono px-1.5 py-0.5 rounded text-xs"
-                      style={{ background: (dataset.eventColors[freqEvents[0]] ?? '#3b82f6') + '20', color: dataset.eventColors[freqEvents[0]] ?? '#93c5fd' }}>
-                      {freqEvents[0]}
-                    </span>
-                    {' '}({t('seqProjectedSuffixLabel')}):
-                  </p>
-                  {projectedDB.map(({ id, suffix }) => (
-                    <div key={id} className="flex items-center gap-2 text-xs">
-                      <span className="text-zinc-500 font-mono w-12">S{String(id + 1).padStart(3, '0')}</span>
-                      <span className="text-zinc-600 text-xs">{t('seqProjectedSuffixLabel')}:</span>
-                      {suffix.length > 0
-                        ? suffix.map((ev, j) => (
-                          <span key={j} className="flex items-center gap-0.5">
-                            <span className="px-1.5 py-0.5 rounded font-mono text-xs"
-                              style={{ background: (dataset.eventColors[ev] ?? '#52525b') + '20', color: dataset.eventColors[ev] ?? '#a1a1aa', border: `1px solid ${dataset.eventColors[ev] ?? '#52525b'}35` }}>
-                              {ev}
-                            </span>
-                            {j < suffix.length - 1 && <ArrowRight className="w-2 h-2 text-zinc-700" />}
-                          </span>
-                        ))
-                        : <span className="text-zinc-700 italic">{t('seqEmptySuffix')}</span>
-                      }
-                    </div>
-                  ))}
-                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">{t('seqProjectedSeedNote')} [{freqEvents[0]} → X].</p>
-                </div>
-              )}
-
-              {step === 'patterns' && (
-                <div className="p-4 space-y-2">
-                  <p className="text-xs text-zinc-500 mb-2">{t('seqPatternsLabel')}</p>
-                  {freqEvents.slice(0, 3).flatMap(prefix =>
-                    freqEvents.filter(e => e !== prefix).slice(0, 2).map(next => {
-                      const count = dataset.sequences.filter(seq => {
-                        const pi = seq.indexOf(prefix)
-                        return pi >= 0 && seq.slice(pi + 1).includes(next)
-                      }).length
-                      const sup = count / dataset.sequences.length
-                      if (sup < 0.3) return null
-                      return (
-                        <div key={`${prefix}-${next}`} className="flex items-center justify-between rounded-lg px-3 py-2 bg-blue-500/5 border border-blue-500/20">
-                          <div className="flex items-center gap-1 text-xs">
-                            <span className="px-1.5 py-0.5 rounded font-mono"
-                              style={{ background: (dataset.eventColors[prefix] ?? '#3b82f6') + '20', color: dataset.eventColors[prefix] ?? '#93c5fd' }}>
-                              {prefix}
-                            </span>
-                            <ArrowRight className="w-3 h-3 text-zinc-600" />
-                            <span className="px-1.5 py-0.5 rounded font-mono"
-                              style={{ background: (dataset.eventColors[next] ?? '#3b82f6') + '20', color: dataset.eventColors[next] ?? '#93c5fd' }}>
-                              {next}
-                            </span>
-                          </div>
-                          <span className="text-blue-400 font-mono text-xs font-semibold">{(sup * 100).toFixed(0)}%</span>
-                        </div>
-                      )
-                    }).filter(Boolean)
-                  )}
+              {/* Step 4: Final sequence database */}
+              {step === 'database' && (
+                <div className="bg-zinc-900">
+                  <table className="w-full text-xs">
+                    <thead className="bg-zinc-900/60 border-b border-zinc-800">
+                      <tr>
+                        <th className="text-left px-3 py-2 text-zinc-500 w-20">{isWeb ? t('seqRawColSession') : t('seqRawColCustomer')}</th>
+                        <th className="text-left px-3 py-2 text-zinc-500">{t('seqPrepColSeq')}</th>
+                        <th className="text-center px-3 py-2 text-zinc-500 w-16">{t('seqPrepColLen')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/40">
+                      {dataset.sequences.slice(0, 6).map((seq, i) => (
+                        <tr key={i} className="hover:bg-zinc-800/20">
+                          <td className="px-3 py-2 text-zinc-400 font-mono">{isWeb ? `S${String(i + 1).padStart(3, '0')}` : `C${String(i + 1).padStart(3, '0')}`}</td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {seq.map((ev, j) => (
+                                <span key={j} className="flex items-center gap-0.5">
+                                  <EventBadge ev={ev} colors={dataset.eventColors} />
+                                  {j < seq.length - 1 && <ArrowRight className="w-2 h-2 text-zinc-700" />}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-center text-zinc-500 font-mono">{seq.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="px-3 py-2 border-t border-zinc-800 flex items-center justify-between">
+                    <span className="text-xs text-zinc-500 font-mono">{dataset.sequences.length} {t('seqPrepReadyNote')}</span>
+                    <span className="text-xs text-emerald-400 font-medium">{t('seqPrepKeyDiff')}</span>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -589,6 +618,21 @@ export default function SequenceMining() {
         </div>
       </div>
 
+      {/* Dataset selector — global, always visible */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">{t('explorerDataset')}:</span>
+        {SEQUENCE_DATASETS.map(ds => (
+          <button key={ds.id} onClick={() => setDatasetId(ds.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              datasetId === ds.id
+                ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                : 'border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300'
+            }`}>
+            {t(ds.labelKey)}
+          </button>
+        ))}
+      </div>
+
       {/* Sub-section nav */}
       <div className="flex gap-2 flex-wrap">
         {SM_SECTION_KEYS.map(s => (
@@ -607,7 +651,7 @@ export default function SequenceMining() {
       <AnimatePresence mode="wait">
         <motion.div key={section} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-          {section === 'explorer' && <SeqDataExplorer datasetId={datasetId} setDatasetId={setDatasetId} />}
+          {section === 'explorer' && <SeqDataExplorer key={datasetId} datasetId={datasetId} />}
           {section === 'preprocessing' && <SeqPreprocessing datasetId={datasetId} />}
           {section === 'metrics' && <SeqMetrics datasetId={datasetId} />}
           {section === 'playground' && <SeqPlayground datasetId={datasetId} />}
