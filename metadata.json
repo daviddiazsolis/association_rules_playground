@@ -1,0 +1,5 @@
+{
+  "name": "Association Rules & Sequence Mining Playground",
+  "description": "Interactive platform to explore frequent pattern mining, association rules (Apriori, FP-Growth) and sequence mining with real datasets.",
+  "frame_permissions": []
+}
