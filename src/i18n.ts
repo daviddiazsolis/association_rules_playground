@@ -407,6 +407,14 @@ export const translations: Translations = {
     seqFreqTitle: 'Top Events',
     seqSessions: 'sessions',
     seqUniqueEvents: 'unique events',
+    notebooksTitle: 'Python Notebooks',
+    notebooksSubtitle: 'Run the full analysis in Google Colab — no installation required.',
+    notebooksOpenColab: 'Open in Colab',
+    notebooksViewGitHub: 'View on GitHub',
+    notebooksAR: 'Association Rules — Apriori & FP-Growth',
+    notebooksARDesc: 'Load a synthetic grocery dataset, compute support/confidence/lift, compare Apriori vs FP-Growth runtimes, visualize rule networks, and explore business insights.',
+    notebooksSM: 'Sequence Mining — PrefixSpan',
+    notebooksSMDesc: 'Preprocess timestamped event logs, run PrefixSpan on web navigation and purchase history, compute sequential confidence, and build funnel & cross-sell analyses.',
   },
 
   es: {
@@ -812,5 +820,13 @@ export const translations: Translations = {
     seqFreqTitle: 'Eventos Top',
     seqSessions: 'sesiones',
     seqUniqueEvents: 'eventos únicos',
+    notebooksTitle: 'Notebooks Python',
+    notebooksSubtitle: 'Ejecuta el análisis completo en Google Colab — sin instalación.',
+    notebooksOpenColab: 'Abrir en Colab',
+    notebooksViewGitHub: 'Ver en GitHub',
+    notebooksAR: 'Reglas de Asociación — Apriori & FP-Growth',
+    notebooksARDesc: 'Carga un dataset sintético de supermercado, calcula soporte/confianza/lift, compara tiempos de Apriori vs FP-Growth, visualiza redes de reglas y extrae insights de negocio.',
+    notebooksSM: 'Minería de Secuencias — PrefixSpan',
+    notebooksSMDesc: 'Preprocesa logs de eventos con timestamps, ejecuta PrefixSpan sobre navegación web e historial de compras, calcula confianza secuencial y construye análisis de funnel y cross-sell.',
   },
 }

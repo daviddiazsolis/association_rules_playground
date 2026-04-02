@@ -16,6 +16,7 @@ import SequenceMining from './components/SequenceMining'
 import ActivitiesSM from './components/ActivitiesSM'
 import BusinessApplications from './components/BusinessApplications'
 import CaseStudy from './components/CaseStudy'
+import NotebooksSection from './components/NotebooksSection'
 import References from './components/References'
 import Footer from './components/Footer'
 
@@ -102,6 +103,7 @@ export default function App() {
         <TranslationWidget />
         <Hero />
         <TabContent />
+        <NotebooksSection />
         <References />
         <Footer />
       </div>
