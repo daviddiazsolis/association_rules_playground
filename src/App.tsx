@@ -67,14 +67,7 @@ function TabContent() {
                 <DataExplorer />
                 <PreprocessingSteps />
                 <MetricsAR />
-                {/* Playground gets its own border/padding from within */}
-                <div className="py-16 px-6 max-w-7xl mx-auto border-t border-zinc-800/50">
-                  <div className="text-center mb-10">
-                    <h2 className="text-3xl font-bold text-zinc-100 mb-2">{t('playgroundTitle')}</h2>
-                    <p className="text-zinc-400">{t('playgroundSubtitle')}</p>
-                  </div>
-                  <Playground />
-                </div>
+                <Playground />
                 <div className="py-16 px-6 max-w-7xl mx-auto border-t border-zinc-800/50">
                   <ActivitiesAR />
                 </div>

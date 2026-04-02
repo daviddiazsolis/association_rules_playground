@@ -51,7 +51,7 @@ function SeqDataExplorer({ datasetId, setDatasetId }: { datasetId: string; setDa
         {[
           { label: t('seqSessions'), value: dataset.sequences.length, color: 'text-blue-400' },
           { label: t('seqUniqueEvents'), value: uniqueEvents, color: 'text-purple-400' },
-          { label: 'Avg length', value: avgLen, color: 'text-amber-400' },
+          { label: t('smAvgLength'), value: avgLen, color: 'text-amber-400' },
         ].map(c => (
           <div key={c.label} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-center">
             <p className={`text-2xl font-bold font-mono ${c.color}`}>{c.value}</p>
@@ -143,10 +143,10 @@ function SeqDataExplorer({ datasetId, setDatasetId }: { datasetId: string; setDa
 // ── Preprocessing for sequences ────────────────────────────────────────────────
 type SeqStep = 'raw' | 'prefix' | 'projected' | 'patterns'
 const SEQ_STEPS: { id: SeqStep; icon: React.ElementType; name: string; desc: string; info: string }[] = [
-  { id: 'raw', icon: Database, name: 'prepStepRawName', desc: 'prepStepRawDesc', info: 'prepInfoRaw' },
-  { id: 'prefix', icon: Layers, name: 'prepStepSetsName', desc: 'prepStepSetsDesc', info: 'prepInfoSets' },
-  { id: 'projected', icon: GitCommitHorizontal, name: 'prepStepMatrixName', desc: 'prepStepMatrixDesc', info: 'prepInfoMatrix' },
-  { id: 'patterns', icon: BarChart2, name: 'prepStepSupportName', desc: 'prepStepSupportDesc', info: 'prepInfoSupport' },
+  { id: 'raw',       icon: Database,            name: 'seqPrepStep1Name', desc: 'seqPrepStep1Desc', info: 'seqPrepStep1Info' },
+  { id: 'prefix',    icon: Layers,              name: 'seqPrepStep2Name', desc: 'seqPrepStep2Desc', info: 'seqPrepStep2Info' },
+  { id: 'projected', icon: GitCommitHorizontal, name: 'seqPrepStep3Name', desc: 'seqPrepStep3Desc', info: 'seqPrepStep3Info' },
+  { id: 'patterns',  icon: BarChart2,            name: 'seqPrepStep4Name', desc: 'seqPrepStep4Desc', info: 'seqPrepStep4Info' },
 ]
 
 function SeqPreprocessing({ datasetId }: { datasetId: string }) {
@@ -186,7 +186,7 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
       <div className="grid lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
         {/* Left */}
         <div className="lg:col-span-4 p-6 bg-zinc-900/50 space-y-2">
-          <h4 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">Pipeline</h4>
+          <h4 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">{t('smPipeline')}</h4>
           <div className="relative space-y-2">
             <div className="absolute left-6 top-5 bottom-5 w-px bg-zinc-800" />
             {SEQ_STEPS.map((s, idx) => {
@@ -220,8 +220,8 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
                 <table className="w-full text-xs min-w-max">
                   <thead className="bg-zinc-900/60 border-b border-zinc-800">
                     <tr>
-                      <th className="text-left px-3 py-2 text-zinc-500 w-16">Session</th>
-                      <th className="text-left px-3 py-2 text-zinc-500">Events (ordered)</th>
+                      <th className="text-left px-3 py-2 text-zinc-500 w-16">{t('seqRawColSession')}</th>
+                      <th className="text-left px-3 py-2 text-zinc-500">{t('seqRawColEvents')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/40 bg-zinc-900">
@@ -249,34 +249,34 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
 
               {step === 'prefix' && (
                 <div className="p-4 space-y-3">
-                  <p className="text-xs text-zinc-500 mb-3">Frequent 1-sequences (prefix seeds, min_support ≥ 0.5):</p>
+                  <p className="text-xs text-zinc-500 mb-3">{t('seqPrefixSeedsLabel')}</p>
                   {freqEvents.map(ev => (
                     <div key={ev} className="flex items-center gap-3 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
                       <span className="px-2 py-1 rounded font-mono text-xs"
                         style={{ background: (dataset.eventColors[ev] ?? '#3b82f6') + '20', color: dataset.eventColors[ev] ?? '#93c5fd', border: `1px solid ${dataset.eventColors[ev] ?? '#3b82f6'}40` }}>
                         {ev}
                       </span>
-                      <span className="text-zinc-400 text-xs">→ seed prefix for projection</span>
+                      <span className="text-zinc-400 text-xs">→ {t('seqPrefixSeedNote')}</span>
                     </div>
                   ))}
-                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">Each seed prefix will generate its own projected database.</p>
+                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">{t('seqPrefixSeedNote')}</p>
                 </div>
               )}
 
               {step === 'projected' && (
                 <div className="p-4 space-y-3">
                   <p className="text-xs text-zinc-500 mb-1">
-                    Projected DB for prefix{' '}
+                    {t('seqProjectedTitle')}{' '}
                     <span className="font-mono px-1.5 py-0.5 rounded text-xs"
                       style={{ background: (dataset.eventColors[freqEvents[0]] ?? '#3b82f6') + '20', color: dataset.eventColors[freqEvents[0]] ?? '#93c5fd' }}>
                       {freqEvents[0]}
                     </span>
-                    {' '}(suffixes after first occurrence):
+                    {' '}({t('seqProjectedSuffixLabel')}):
                   </p>
                   {projectedDB.map(({ id, suffix }) => (
                     <div key={id} className="flex items-center gap-2 text-xs">
                       <span className="text-zinc-500 font-mono w-12">S{String(id + 1).padStart(3, '0')}</span>
-                      <span className="text-zinc-600 text-xs">suffix:</span>
+                      <span className="text-zinc-600 text-xs">{t('seqProjectedSuffixLabel')}:</span>
                       {suffix.length > 0
                         ? suffix.map((ev, j) => (
                           <span key={j} className="flex items-center gap-0.5">
@@ -287,17 +287,17 @@ function SeqPreprocessing({ datasetId }: { datasetId: string }) {
                             {j < suffix.length - 1 && <ArrowRight className="w-2 h-2 text-zinc-700" />}
                           </span>
                         ))
-                        : <span className="text-zinc-700 italic">∅ (empty)</span>
+                        : <span className="text-zinc-700 italic">{t('seqEmptySuffix')}</span>
                       }
                     </div>
                   ))}
-                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">Count frequent events in suffixes → new patterns like [{freqEvents[0]} → X].</p>
+                  <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800">{t('seqProjectedSeedNote')} [{freqEvents[0]} → X].</p>
                 </div>
               )}
 
               {step === 'patterns' && (
                 <div className="p-4 space-y-2">
-                  <p className="text-xs text-zinc-500 mb-2">Frequent 2-sequences found from projected DBs:</p>
+                  <p className="text-xs text-zinc-500 mb-2">{t('seqPatternsLabel')}</p>
                   {freqEvents.slice(0, 3).flatMap(prefix =>
                     freqEvents.filter(e => e !== prefix).slice(0, 2).map(next => {
                       const count = dataset.sequences.filter(seq => {
@@ -376,37 +376,37 @@ function SeqMetrics({ datasetId }: { datasetId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           {
-            title: 'Sequence Support',
-            formula: 'support([A→B]) = sequences containing A before B / total sequences',
-            desc: 'How common is this ordered pattern across all sessions? Independent of gap size.',
+            titleKey: 'seqMetricsSupportTitle',
+            formulaKey: 'seqMetricsSupportFormula',
+            descKey: 'seqMetricsSupportDesc',
             color: 'border-blue-500/30',
           },
           {
-            title: 'Sequential Confidence',
-            formula: 'conf([A]⟹[B]) = support([A→B]) / support([A])',
-            desc: 'Given a user visited A, how likely are they to visit B at some point later? Used to build next-event recommendations.',
+            titleKey: 'seqMetricsConfTitle',
+            formulaKey: 'seqMetricsConfFormula',
+            descKey: 'seqMetricsConfDesc',
             color: 'border-purple-500/30',
           },
         ].map(m => (
-          <div key={m.title} className={`rounded-2xl border ${m.color} bg-zinc-900/40 p-5 space-y-3`}>
-            <h4 className="text-sm font-bold text-zinc-100">{m.title}</h4>
+          <div key={m.titleKey} className={`rounded-2xl border ${m.color} bg-zinc-900/40 p-5 space-y-3`}>
+            <h4 className="text-sm font-bold text-zinc-100">{t(m.titleKey)}</h4>
             <div className="rounded-lg bg-zinc-950/60 border border-zinc-800 px-3 py-2">
-              <code className="text-xs font-mono text-blue-300 break-all">{m.formula}</code>
+              <code className="text-xs font-mono text-blue-300 break-all">{t(m.formulaKey)}</code>
             </div>
-            <p className="text-sm text-zinc-400 leading-relaxed">{m.desc}</p>
+            <p className="text-sm text-zinc-400 leading-relaxed">{t(m.descKey)}</p>
           </div>
         ))}
       </div>
 
       {/* Transition probability matrix */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h4 className="text-sm font-semibold text-zinc-100 mb-1">Sequential Confidence Matrix</h4>
-        <p className="text-xs text-zinc-500 mb-4">P(column event occurs after row event) — sequential confidence</p>
+        <h4 className="text-sm font-semibold text-zinc-100 mb-1">{t('seqMatrixTitle')}</h4>
+        <p className="text-xs text-zinc-500 mb-4">{t('seqMatrixDesc')}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-zinc-800">
-                <th className="text-left py-2 pr-3 text-zinc-500 font-medium">From ↓ / To →</th>
+                <th className="text-left py-2 pr-3 text-zinc-500 font-medium">{t('seqMatrixFromTo')}</th>
                 {topEvents.map(ev => (
                   <th key={ev} className="py-2 px-2 text-center font-medium"
                     style={{ color: dataset.eventColors[ev] ?? '#a1a1aa' }}>
@@ -438,7 +438,7 @@ function SeqMetrics({ datasetId }: { datasetId: string }) {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-zinc-600 mt-3">High values (green) indicate strong sequential confidence. Use these to build "next step" recommendations.</p>
+        <p className="text-xs text-zinc-600 mt-3">{t('seqMatrixNote')}</p>
       </div>
     </div>
   )
@@ -504,7 +504,7 @@ function SeqPlayground({ datasetId }: { datasetId: string }) {
         {!hasRun && (
           <div className="flex flex-col items-center justify-center py-12 text-zinc-600">
             <GitCommitHorizontal className="w-8 h-8 mb-3 opacity-40" />
-            <p className="text-sm">Configure thresholds and click Mine Sequences</p>
+            <p className="text-sm">{t('seqPlaygroundHint')}</p>
           </div>
         )}
         {hasRun && results.length === 0 && (
@@ -554,11 +554,11 @@ function SeqPlayground({ datasetId }: { datasetId: string }) {
 // ── Main SequenceMining component ──────────────────────────────────────────────
 type SMSection = 'explorer' | 'preprocessing' | 'metrics' | 'playground'
 
-const SM_SECTIONS: { id: SMSection; label: string }[] = [
-  { id: 'explorer', label: 'Data Explorer' },
-  { id: 'preprocessing', label: 'Preprocessing' },
-  { id: 'metrics', label: 'Metrics' },
-  { id: 'playground', label: 'Playground' },
+const SM_SECTION_KEYS: { id: SMSection; labelKey: string }[] = [
+  { id: 'explorer', labelKey: 'smSectionExplorer' },
+  { id: 'preprocessing', labelKey: 'smSectionPrep' },
+  { id: 'metrics', labelKey: 'smSectionMetrics' },
+  { id: 'playground', labelKey: 'smSectionPlayground' },
 ]
 
 export default function SequenceMining() {
@@ -591,14 +591,14 @@ export default function SequenceMining() {
 
       {/* Sub-section nav */}
       <div className="flex gap-2 flex-wrap">
-        {SM_SECTIONS.map(s => (
+        {SM_SECTION_KEYS.map(s => (
           <button key={s.id} onClick={() => setSection(s.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
               section === s.id
                 ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
                 : 'border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300'
             }`}>
-            {s.label}
+            {t(s.labelKey)}
           </button>
         ))}
       </div>
