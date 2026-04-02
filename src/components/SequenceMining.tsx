@@ -407,13 +407,13 @@ function SeqMetrics({ datasetId }: { datasetId: string }) {
           {
             titleKey: 'seqMetricsSupportTitle',
             formulaKey: 'seqMetricsSupportFormula',
-            descKey: 'seqMetricsSupportDesc',
+            descKey: datasetId === 'web' ? 'seqMetricsSupportDescWeb' : 'seqMetricsSupportDescPurchase',
             color: 'border-blue-500/30',
           },
           {
             titleKey: 'seqMetricsConfTitle',
             formulaKey: 'seqMetricsConfFormula',
-            descKey: 'seqMetricsConfDesc',
+            descKey: datasetId === 'web' ? 'seqMetricsConfDescWeb' : 'seqMetricsConfDescPurchase',
             color: 'border-purple-500/30',
           },
         ].map(m => (
