@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { LanguageProvider } from './context/LanguageContext'
 import { useLanguage } from './context/LanguageContext'
+import { ThemeProvider } from './context/ThemeContext'
 import TranslationWidget from './components/TranslationWidget'
 import Hero from './components/Hero'
 import Theory from './components/Theory'
@@ -98,15 +99,17 @@ function TabContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100">
-        <TranslationWidget />
-        <Hero />
-        <TabContent />
-        <NotebooksSection />
-        <References />
-        <Footer />
-      </div>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <div className="min-h-screen bg-zinc-950 text-zinc-100">
+          <TranslationWidget />
+          <Hero />
+          <TabContent />
+          <NotebooksSection />
+          <References />
+          <Footer />
+        </div>
+      </LanguageProvider>
+    </ThemeProvider>
   )
 }
