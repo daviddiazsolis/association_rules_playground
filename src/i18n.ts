@@ -237,6 +237,7 @@ export const translations: Translations = {
     footerPortfolio: 'Portfolio',
     footerGithub: 'GitHub',
     footerRights: 'Apache 2.0 License',
+    footerLiveCoded: 'This site was built with the help of generative AI.',
 
     // --- AlgorithmInternals ---
     algoTitle: 'Algorithm Internals',
@@ -650,6 +651,7 @@ export const translations: Translations = {
     footerPortfolio: 'Portafolio',
     footerGithub: 'GitHub',
     footerRights: 'Licencia Apache 2.0',
+    footerLiveCoded: 'Este sitio fue construido con la ayuda de IA generativa.',
 
     // --- AlgorithmInternals ---
     algoTitle: 'Internals de Algoritmos',

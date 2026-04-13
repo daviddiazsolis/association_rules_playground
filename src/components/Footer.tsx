@@ -20,6 +20,7 @@ export default function Footer() {
           </a>
           {' · '}{t('footerRights')}
         </p>
+        <p className="text-zinc-500 text-xs italic">{t('footerLiveCoded')}</p>
         <div className="flex items-center gap-4">
           <a
             href="https://github.com/daviddiazsolis/association_rules_playground"
