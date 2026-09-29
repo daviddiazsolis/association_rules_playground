@@ -21,7 +21,9 @@ const notebooks = [
 ]
 
 export default function NotebooksSection() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const other = language === 'es' ? 'en' : 'es'
+  const withLang = (file: string, l: 'en' | 'es') => (l === 'en' ? file.replace('.ipynb', '_EN.ipynb') : file)
 
   return (
     <section className="py-16 px-6 max-w-7xl mx-auto border-t border-zinc-800/50">
@@ -33,8 +35,9 @@ export default function NotebooksSection() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {notebooks.map(({ file, titleKey, descKey, accent }) => {
-          const colabUrl = `${BASE_COLAB}/${file}`
-          const ghUrl    = `${BASE_GH}/${file}`
+          const colabUrl = `${BASE_COLAB}/${withLang(file, language)}`
+          const otherUrl = `${BASE_COLAB}/${withLang(file, other)}`
+          const ghUrl    = `${BASE_GH}/${withLang(file, language)}`
           const accentClasses: Record<string, { border: string; badge: string; btn: string }> = {
             emerald: {
               border: 'border-emerald-500/30 hover:border-emerald-500/60',
@@ -71,6 +74,14 @@ export default function NotebooksSection() {
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   {t('notebooksOpenColab')}
+                </a>
+                <a
+                  href={otherUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-colors"
+                >
+                  {t('notebooksOther')}
                 </a>
                 <a
                   href={ghUrl}
